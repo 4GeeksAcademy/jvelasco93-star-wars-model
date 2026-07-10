@@ -1,6 +1,6 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from http import HTTPStatus
-from models import Character, Planet, Vehicle, db, User
+from models import db, User
 from utils import APIException
 
 users_bp = Blueprint("users", __name__)
@@ -9,10 +9,8 @@ users_bp = Blueprint("users", __name__)
 @users_bp.route("/users", methods=["GET"])
 def get_users():
     try:
-        users: list[User] = db.session.execute(db.select(User)).scalars().all()
-        return jsonify([
-            user.serialize() for user in users
-        ])
+        users = db.session.execute(db.select(User)).scalars().all()
+        return jsonify([user.serialize() for user in users]), HTTPStatus.OK
     except Exception as e:
         raise APIException(
             str(e), status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -37,13 +35,14 @@ def get_user(user_id):
             str(e), status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
-@users_bp.route('/users/<int:user_id>/favorites', methods=['GET'])
-def get_user_favorites(user_id: int):
-    if user_id < 0:
-        raise APIException("Invalid user ID",
-                           status_code=HTTPStatus.BAD_REQUEST)
-
+@users_bp.route("/users/favorites", methods=["GET"])
+def get_current_user_favorites():
     try:
+        user_id = request.args.get("user_id", type=int)
+        if user_id is None or user_id < 0:
+            raise APIException(
+                "user_id is required and must be a valid ID", status_code=HTTPStatus.BAD_REQUEST)
+
         user = db.session.get(User, user_id)
         if not user:
             raise APIException(
@@ -51,90 +50,9 @@ def get_user_favorites(user_id: int):
 
         return jsonify({
             "planets": [planet.serialize() for planet in user.favorite_planets],
-            "characters": [planet.serialize() for planet in user.favorite_characters],
+            "characters": [character.serialize() for character in user.favorite_characters],
             "vehicles": [vehicle.serialize() for vehicle in user.favorite_vehicles],
         }), HTTPStatus.OK
-    except APIException:
-        raise
-    except Exception as e:
-        raise APIException(
-            str(e), status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
-
-
-@users_bp.route('/users/<int:user_id>/favorites/planets/<int:planet_id>', methods=['DELETE'])
-def delete_favorite_planet(user_id: int, planet_id: int):
-    try:
-        user = db.session.get(User, user_id)
-        if not user:
-            raise APIException(
-                "User not found", status_code=HTTPStatus.NOT_FOUND)
-
-        planet = db.session.get(Planet, planet_id)
-        if not planet:
-            raise APIException("Planet not found",
-                               status_code=HTTPStatus.NOT_FOUND)
-
-        if planet not in user.favorite_planets:
-            raise APIException("Planet is not in favorites",
-                               status_code=HTTPStatus.NOT_FOUND)
-
-        user.favorite_planets.remove(planet)
-        db.session.commit()
-        return jsonify({"msg": "Planet removed from favorites"}), HTTPStatus.OK
-    except APIException:
-        raise
-    except Exception as e:
-        raise APIException(
-            str(e), status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
-
-
-@users_bp.route("/users/<int:user_id>/favorites/characters/<int:character_id>", methods=["DELETE"])
-def delete_favorite_character(user_id, character_id):
-    try:
-        user = db.session.get(User, user_id)
-        if not user:
-            raise APIException(
-                "User not found", status_code=HTTPStatus.NOT_FOUND)
-
-        character = db.session.get(Character, character_id)
-        if not character:
-            raise APIException("Character not found",
-                               status_code=HTTPStatus.NOT_FOUND)
-
-        if character not in user.favorite_characters:
-            raise APIException("Character is not in favorites",
-                               status_code=HTTPStatus.NOT_FOUND)
-
-        user.favorite_characters.remove(character)
-        db.session.commit()
-        return jsonify({"msg": "Character removed from favorites"}), HTTPStatus.OK
-    except APIException:
-        raise
-    except Exception as e:
-        raise APIException(
-            str(e), status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
-
-
-@users_bp.route("/users/<int:user_id>/favorites/vehicles/<int:vehicle_id>", methods=["DELETE"])
-def delete_favorite_vehicle(user_id, vehicle_id):
-    try:
-        user = db.session.get(User, user_id)
-        if not user:
-            raise APIException(
-                "User not found", status_code=HTTPStatus.NOT_FOUND)
-
-        vehicle = db.session.get(Vehicle, vehicle_id)
-        if not vehicle:
-            raise APIException("Vehicle not found",
-                               status_code=HTTPStatus.NOT_FOUND)
-
-        if vehicle not in user.favorite_vehicles:
-            raise APIException("Vehicle is not in favorites",
-                               status_code=HTTPStatus.NOT_FOUND)
-
-        user.favorite_vehicles.remove(vehicle)
-        db.session.commit()
-        return jsonify({"msg": "Vehicle removed from favorites"}), HTTPStatus.OK
     except APIException:
         raise
     except Exception as e:

@@ -13,14 +13,14 @@ from routes.planets import planets_bp
 from routes.users import users_bp
 from routes.characters import characters_bp
 from routes.vehicles import vehicles_bp
+from routes.favorites import favorites_bp
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
 db_url = os.getenv("DATABASE_URL")
 if db_url is not None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
-        "postgres://", "postgresql://")
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -35,17 +35,14 @@ app.register_blueprint(planets_bp)
 app.register_blueprint(users_bp)
 app.register_blueprint(characters_bp)
 app.register_blueprint(vehicles_bp)
+app.register_blueprint(favorites_bp)
 
 # Handle/serialize errors like a JSON object
-
-
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
 
 # generate sitemap with all your endpoints
-
-
 @app.route('/')
 def sitemap():
     return generate_sitemap(app)
