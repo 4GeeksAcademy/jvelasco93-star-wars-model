@@ -62,6 +62,9 @@ class User(db.Model):
             "email": self.email,
         }
 
+    def __repr__(self):
+        return f"{self.username}"
+
 
 class Planet(db.Model):
     __tablename__ = "planets"
