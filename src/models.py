@@ -86,6 +86,9 @@ class Planet(db.Model):
             "population": self.population,
         }
 
+    def __repr__(self):
+        return self.name
+
 
 class Character(db.Model):
     __tablename__ = "characters"
@@ -116,6 +119,9 @@ class Character(db.Model):
             "birth_year": self.birth_year,
         }
 
+    def __repr__(self):
+        return self.name
+
 
 class Vehicle(db.Model):
     __tablename__ = "vehicles"
@@ -141,3 +147,6 @@ class Vehicle(db.Model):
             "model": self.model,
             "passengers": self.passengers,
         }
+
+    def __repr__(self):
+        return self.name
